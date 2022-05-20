@@ -40,16 +40,14 @@ function chunkSlice(tail, chunk){
 	}
 }
 
+var target = utf8.encode('"title": "')
+var jsonStart = utf8.encode('	{"')
 function parseChunk(data){
 	var titles = [];
 	var tail;
-	var size = data.byteLength;
-	var target = utf8.encode('"title": "')
-	var jsonStart = utf8.encode('	{"')
-	var idx = 0;
+	var idx = lastJsonStart = 0;
 
-	var lastJsonStart = 0;
-	while (idx < size){
+	while (idx < data.byteLength){
 		var nextJsonStart = data.indexOf(jsonStart, idx)
 		var nextTargetIdx = data.indexOf(target, nextJsonStart)
 
