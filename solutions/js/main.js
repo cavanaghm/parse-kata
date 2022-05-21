@@ -19,7 +19,7 @@ parser._transform = function (data, encoding, done){
 
 		const slice = chunkSlice(lastTail, data)
 		lastTail = undefined;
-		var [titles, tail] = parseChunk(slice.head)
+		var [titles, tail] = parseChunk(slice)
 		if(tail) lastTail = tail;
 		this.push(titles)
 		done()
@@ -35,9 +35,7 @@ function chunkSlice(tail, chunk){
 	var head = Buffer.alloc(sliceLength)
 	tail.copy(head)
 	chunk.copy(head, tail.byteLength)
-	return {
-		head: head,
-	}
+	return head
 }
 
 var target = utf8.encode('"title": "')
@@ -73,8 +71,9 @@ function parseChunk(data){
 			titles.push(utf8.encode('\n'))
 
 			if (lineEnd < 0) break
+			if (lineEnd + 50 > data.byteLength) break
 
-			idx = lineEnd;
+			idx = lineEnd + 50;
 		 }
 	}
 	titles = Buffer.from(titles)

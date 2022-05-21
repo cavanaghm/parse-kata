@@ -21,6 +21,7 @@ or die "$!\n";
 print "Writing into $output_path\n";
 
 while ($line = <INPUT_FILE>){
+	$line = substr $line, 60;
 	$line = substr $line, (index ($line, "\"title\": \"") + 10);
 	$titleEnd = index $line, "\"";
 	$line = substr $line, 0, $titleEnd;
