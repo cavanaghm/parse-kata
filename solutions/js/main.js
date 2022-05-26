@@ -17,10 +17,9 @@ var lastTail = Buffer.alloc(0);
 
 parser._transform = function (data, encoding, done){
 
-		const slice = chunkSlice(lastTail, data)
-		lastTail = undefined;
-		var [titles, tail] = parseChunk(slice)
-		if(tail) lastTail = tail;
+		const slice = chunkSlice(data, lastTail)
+		lastTail = slice.tail;
+		var titles = parseChunk(slice.head)
 		this.push(titles)
 		done()
 };
@@ -29,53 +28,49 @@ readStream
 	.pipe(parser)
 	.pipe(writeStream)
 
-function chunkSlice(tail, chunk){
-	if(!tail) return {head:chunk}
-	var sliceLength = chunk.byteLength + tail.byteLength;
+var endl = utf8.encode("\n");
+function chunkSlice(chunk, tail){
+	var indexOfLastNewLine = chunk.lastIndexOf(endl);
+	var chunkSize = chunk.byteLength
+	var tailSize = tail?.byteLength  || 0;
+	var sliceLength = chunkSize - (chunkSize - indexOfLastNewLine) + tailSize;
 	var head = Buffer.alloc(sliceLength)
-	tail.copy(head)
-	chunk.copy(head, tail.byteLength)
-	return head
+	tail && tail.copy(head)
+	chunk.copy(head, tailSize)
+	return {
+		head: head,
+		tail: chunk.slice(indexOfLastNewLine),
+	}
 }
 
 var target = utf8.encode('"title": "')
 var jsonStart = utf8.encode('	{"')
+var targetEnd = utf8.encode('",')
 function parseChunk(data){
 	var titles = [];
-	var tail;
-	var idx = lastJsonStart = 0;
+	var idx = 0;
 
 	while (idx < data.byteLength){
 		var nextJsonStart = data.indexOf(jsonStart, idx)
 		var nextTargetIdx = data.indexOf(target, nextJsonStart)
 
-		if( nextJsonStart < 0){
-			tail = data.slice(lastJsonStart)
-		}else{
-			lastJsonStart = nextJsonStart
-		}
 		if (nextTargetIdx < 0){
-			tail = data.slice(idx)
 			break;
 		 } else {
 			var titleStart = nextTargetIdx + 10;
-			var titleEnd = data.indexOf(utf8.encode('",'), titleStart)
-			var lineEnd = data.indexOf(utf8.encode("\n"), titleEnd)
+			var titleEnd = data.indexOf(targetEnd, titleStart)
+			var lineEnd = data.indexOf(endl, titleEnd)
 
 			if (titleEnd < 0) {
-				tail = data.slice(lastJsonStart)
 				break;
 			}
 
-			titles.push(...data.slice(titleStart, titleEnd))
-			titles.push(utf8.encode('\n'))
+			titles.push(data.slice(titleStart, titleEnd))
+			titles.push(endl)
 
-			if (lineEnd < 0) break
-			if (lineEnd + 50 > data.byteLength) break
-
-			idx = lineEnd + 50;
+			idx = lineEnd;
 		 }
 	}
-	titles = Buffer.from(titles)
-	return [titles, tail]
+	titles = Buffer.concat(titles)
+	return titles
 }

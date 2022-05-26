@@ -10,8 +10,6 @@ var workerCount = 1; //Main thread
 var readStream = fs.createReadStream(input)
 console.log(`Reading from: ${input}`)
 
-var writeStream;
-var outputHandle;
 var writeStream = fs.createWriteStream(output)
 console.log(`Writing to: ${output}`)
 

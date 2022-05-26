@@ -1,5 +1,5 @@
 #include <fstream>
-#include <cstdio>
+#include <iostream>
 
 using namespace std;
 
@@ -21,34 +21,38 @@ int findIndex(char arr[], int n, char target[], int matchLength, int start)
 	return -1;
 }
 
-int streamOutput(char arr[], int start, int end, FILE* output)
-{
-	int size = end - start;
-	char buf[size];
-	for(int i = start; i < end; i++)
-	{
-		buf[i - start] = arr[i];
-	}
-	fwrite(buf, size, 1, output);
-	fwrite("\n", 1, 1, output);
-	return 0;
-}
+//int streamOutput(char arr[], int start, int end, FILE* output)
+//{
+//	int size = end - start;
+//	char buf[size];
+//	for(int i = start; i < end; i++)
+//	{
+//		buf[i - start] = arr[i];
+//	}
+//	fwrite(buf, 1, size, output);
+//	fwrite("\n", 1, 1, output);
+//	return 0;
+//}
 
 int main()
 {
-	FILE* input;
-	FILE* output;
+	ifstream input;
+	ofstream output;
 	char buffer[1024 * 1024];
-	input = fopen("input.txt", "r");
-	output = fopen("cpp.txt", "a");
+	input.open("input.txt");
+	output.open("cpp.txt");
 	char nextJson[3] = "	{";
 	char nextTarget[11] = "\"title\": \"";
 	char endTarget[2] = "\"";
 	int idx = 0;
-	while(!feof(input))
+	int lines = 0;
+	int newReads = 0;
+	while(!input.eof())
 	{
+		idx = 0;
 		int bufSize = sizeof(buffer);
-		fread(buffer, bufSize, 1, input);
+		input.read(buffer, sizeof(buffer));
+		newReads++;
 		while(idx < bufSize)
 		{
 			int jsonStart = findIndex(buffer, bufSize, nextJson, 2, idx);
@@ -65,11 +69,13 @@ int main()
 				idx = bufSize;
 				break;
 			}
-			streamOutput(buffer, titleStart, titleEnd, output);
+			lines++;
+		//	streamOutput(buffer, titleStart, titleEnd, output);
 
 			idx = titleEnd;
 		}
 	}
-
+	cout << newReads << endl;
+	cout << lines;
 	return 0;
 }
