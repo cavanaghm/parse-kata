@@ -44,33 +44,40 @@ function chunkSlice(chunk, tail){
 }
 
 var target = utf8.encode('"title": "')
-var jsonStart = utf8.encode('	{"')
 var targetEnd = utf8.encode('",')
+
+function findIndex(data, target, start){
+	return data.indexOf(target, start)
+}
+
+
+function concat(titles){
+	return Buffer.concat(titles)
+}
+
 function parseChunk(data){
 	var titles = [];
 	var idx = 0;
+	var chunkSize = data.byteLength
 
-	while (idx < data.byteLength){
-		var nextJsonStart = data.indexOf(jsonStart, idx)
-		var nextTargetIdx = data.indexOf(target, nextJsonStart)
+	while (idx < chunkSize){
+		var nextTargetIdx = findIndex(data, target, idx)
 
-		if (nextTargetIdx < 0){
-			break;
-		 } else {
-			var titleStart = nextTargetIdx + 10;
-			var titleEnd = data.indexOf(targetEnd, titleStart)
-			var lineEnd = data.indexOf(endl, titleEnd)
+		if (nextTargetIdx < 0) break;
 
-			if (titleEnd < 0) {
-				break;
-			}
+		var titleStart = nextTargetIdx + 10;
+		var titleEnd = findIndex(data, targetEnd, titleStart)
+		var lineEnd = findIndex(data, endl, titleEnd)
 
-			titles.push(data.slice(titleStart, titleEnd))
-			titles.push(endl)
+		if (titleEnd < 0) break;
 
-			idx = lineEnd;
-		 }
+
+		titles.push(data.slice(titleStart, titleEnd))
+		titles.push(endl)
+
+		if(lineEnd + 50 > chunkSize) break
+		idx = lineEnd;
 	}
-	titles = Buffer.concat(titles)
+	titles = concat(titles);
 	return titles
 }
